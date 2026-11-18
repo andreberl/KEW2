@@ -3,3 +3,6 @@ local_files/
 
 # Ignore pycache files
 src/__pycache__/
+
+# Ignore venv
+.venv
