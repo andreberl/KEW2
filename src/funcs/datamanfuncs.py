@@ -79,6 +79,7 @@ def unidentified_percentage(
     on_column and data_column should be string values of columns in the given dataframe where
     data_column is named the same in both columns
     """
+    calc_column = "Unidentified_Percentage"
     # Join columns and calculate the percentage
     right_column = f"{data_column}_right"
     df = (data_ident.join(
@@ -100,7 +101,7 @@ def unidentified_percentage(
             (pl.col(data_column) + pl.col(right_column)) * 100
         )
         .otherwise(None)
-        .alias("Unidentified_Percentage")
+        .alias(calc_column)
         )
     .sort(on_column)
     )
@@ -111,4 +112,4 @@ def unidentified_percentage(
     })
     df.write_csv(output_path)
     print(f"Unidentified Percentage calculated for {on_column} and saved under {output_path}")
-    return
+    return df, calc_column
