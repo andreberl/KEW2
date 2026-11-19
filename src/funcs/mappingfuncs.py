@@ -1,6 +1,8 @@
 """ Functions for preparing geospacial data """
 
 import polars as pl
+import folium
+from folium.plugins import HeatMap
 from pathlib import Path
 
 def pull_geo_data_df(data, primary_key, lat_name, long_name): #might delete later
@@ -44,6 +46,7 @@ def load_dataframe(
         lat_name: str,
         long_name: str,
 ):
+    """ Return a df of lat/long for a csv"""
     df = (
     pl.scan_csv(
         data
@@ -84,13 +87,53 @@ def aggregate_coordinates(
         )
         .group_by(["lat_grid", "lon_grid"])
         .agg(
-            pl.len().alias("count")
+            pl.len().alias("weight")
         )
         .with_columns(
             (pl.col("lat_grid") + resolution / 2).alias("latitude"),
             (pl.col("lon_grid") + resolution / 2).alias("longitude")
         )
-        .select(["latitude", "longitude", "count"])
+        .select(["latitude", "longitude", "weight"])
     )
-    df_agg.write_csv(Path("outputs") / "long_lat_agg.csv") ###Delete!
     return df_agg
+
+def plot_heatmap(
+        df: pl.DataFrame,
+        output_path: str | Path
+) -> None:
+    """HeatMap of geographical data"""
+    # Convert the df to a matrix
+    coordinates = df.select(
+        ["latitude", "longitude", "weight"]
+        ).rows()
+
+    # Create the map
+    map = folium.Map(
+        location=[15, 0],
+        zoom_start=2,
+        tiles=None,
+        control_scale = True
+        )
+    # Add world boundaries
+    folium.GeoJson(
+        "../res/worldmap.json",
+        name="World Map",
+        style_function=lambda feature: {
+            "weight": 0.5,
+            "fillOpacity": 0.8
+        }
+    ).add_to(map)
+
+    # Add the heatmap
+    HeatMap(
+        coordinates,
+        radius = 15,
+        blur = 5,
+        min_opacity = 0.5
+    ).add_to(map)
+
+    # Output the map
+    map.save(str(output_path))
+
+    print(f"Heatmap was saved to {output_path}")
+    return
