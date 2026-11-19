@@ -6,3 +6,6 @@ src/__pycache__/
 
 # Ignore venv
 .venv
+.Rproj.user
+.Rhistory
+.DS_Store
