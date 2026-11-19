@@ -1,11 +1,23 @@
-# Ignore dataset and notes
+# Ignore local datasets
 local_files/
 
-# Ignore pycache files
+# Ignore Python files
 src/__pycache__/
 
-# Ignore venv
+# Ignore virtual environment
 .venv
-.Rproj.user
+
+# Ignore RStudio temporary files
+.Rproj.user/
 .Rhistory
 .DS_Store
+
+# Ignore generated CSV summaries
+country_filtered.csv
+country_summary.csv
+country_priorities.csv
+genus_year_summary.csv
+
+# Ignore large GBIF datasets
+top100_registros_identificados_campos_analise.csv
+top100_registros_nao_identificados_campos_analise.csv
