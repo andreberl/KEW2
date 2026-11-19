@@ -87,13 +87,20 @@ def aggregate_coordinates(
         )
         .group_by(["lat_grid", "lon_grid"])
         .agg(
-            pl.len().alias("weight")
+            pl.len().alias("count")
         )
         .with_columns(
             (pl.col("lat_grid") + resolution / 2).alias("latitude"),
             (pl.col("lon_grid") + resolution / 2).alias("longitude")
         )
-        .select(["latitude", "longitude", "weight"])
+        .select(["latitude", "longitude", "count"])
+    )
+
+    # Normalize the weights:
+    df_agg = df_agg.with_columns(
+        (pl.col("count").log1p()/
+         pl.col("count").max().log1p()
+         ).alias("weight")
     )
     return df_agg
 
@@ -114,22 +121,43 @@ def plot_heatmap(
         tiles=None,
         control_scale = True
         )
+
+    # Change map colours:
+    folium.Rectangle(
+        bounds=[[-90,-180],[90, 180]],
+        color = "#F8F3F8",
+        fill = True,
+        fill_color="#F8F3F8",
+        fill_opacity=0.001,
+        weight=0
+    ).add_to(map)
+
+     # Add the heatmap
+    HeatMap(
+        coordinates,
+        radius=22,
+        blur=15,
+        min_opacity=0.1,
+        max_zoom=10,
+        gradient={
+            0.2: "#F5C542",
+            0.4: "#F28C28",
+            0.6: "#E04F2D",
+            0.8: "#A61C3C",
+            1.0: "#570A32"
+        }
+    ).add_to(map)
+
     # Add world boundaries
     folium.GeoJson(
         "../res/worldmap.json",
         name="World Map",
         style_function=lambda feature: {
-            "weight": 0.5,
-            "fillOpacity": 0.8
+            "color": "#795E4A",
+            "weight": 0.7,
+            "fillColor": "#EEE5D5",
+            "fillOpacity": 0.02
         }
-    ).add_to(map)
-
-    # Add the heatmap
-    HeatMap(
-        coordinates,
-        radius = 15,
-        blur = 5,
-        min_opacity = 0.5
     ).add_to(map)
 
     # Output the map
