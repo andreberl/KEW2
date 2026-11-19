@@ -1,6 +1,5 @@
 """Visualize genera counts"""
 
-import csv
 from pathlib import Path
 import polars as pl
 import matplotlib.pyplot as plt
