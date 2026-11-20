@@ -17,6 +17,8 @@ country_filtered.csv
 country_summary.csv
 country_priorities.csv
 genus_year_summary.csv
+country_genus_decade.csv
+genus_country_enrichment.csv
 
 # Ignore large GBIF datasets
 top100_registros_identificados_campos_analise.csv
