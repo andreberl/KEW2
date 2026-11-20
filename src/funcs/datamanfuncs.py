@@ -113,3 +113,44 @@ def unidentified_percentage(
     df.write_csv(output_path)
     print(f"Unidentified Percentage calculated for {on_column} and saved under {output_path}")
     return df, calc_column
+
+def decade_count(
+        df: pl.DataFrame,
+        output_path: str | Path,
+        on_column: str = "Ctrl_year"
+):
+    df_decade =( df.with_columns(
+                (
+                    pl.col(on_column)
+                    .cast(pl.Int64, strict = False)
+                    // 10 * 10
+                ).alias("Decade")
+            )
+        .filter(pl.col("Decade").is_not_null())
+                .group_by("Decade")
+        .agg(
+            pl.col("Registrations_Ident").sum(),
+            pl.col("Registrations_Unident").sum()
+        )
+        .with_columns(
+            (
+                pl.col("Registrations_Ident")
+                + pl.col("Registrations_Unident")
+            ).alias("Total")
+        )
+        .with_columns(
+            pl.when(pl.col("Total") > 0)
+            .then(
+                pl.col("Registrations_Unident")
+                / pl.col("Total") * 100
+            )
+            .otherwise(None)
+            .alias("Unidentified_Percentage")
+        )
+        .drop("Total")
+        .sort("Decade")
+    )
+    df_decade.write_csv(output_path)
+    return df_decade
+
+        

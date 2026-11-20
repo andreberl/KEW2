@@ -2,6 +2,7 @@
 
 import polars as pl
 import folium
+import branca.colormap as cm
 from folium.plugins import HeatMap
 from pathlib import Path
 
@@ -43,28 +44,28 @@ def aggreate_geo_df( #might delete later
 
 def load_dataframe(
         data: str | Path,
+        key: str,
         lat_name: str,
         long_name: str,
 ):
-    """ Return a df of lat/long for a csv"""
+    """ Return a df of lat/long & key for a csv"""
     df = (
     pl.scan_csv(
         data
         )
-        .select([lat_name, long_name])
+        .select([key, lat_name, long_name])
         .drop_nulls()
         .collect()
     )
-    return df
+    return df, lat_name, long_name
 
 def aggregate_coordinates(
-        data: str | Path,
+        df: pl.DataFrame,
         lat_name: str,
         long_name: str,
         resolution: float = 2.0
 ) -> pl.DataFrame:
     """ Aggregate geographical points """
-    df = load_dataframe(data,lat_name,long_name)
     df_agg = (
         df.select(
             pl.col(lat_name).cast(pl.Float64, strict=False).alias("lat"),
@@ -140,11 +141,11 @@ def plot_heatmap(
         min_opacity=0.1,
         max_zoom=10,
         gradient={
-            0.2: "#F5C542",
-            0.4: "#F28C28",
-            0.6: "#E04F2D",
-            0.8: "#A61C3C",
-            1.0: "#570A32"
+            0.2: "#2D6A4F",
+            0.4: "#8FAE43",
+            0.6: "#F4BA32",
+            0.8: "#EA6728",
+            1.0: "#A51D28"
         }
     ).add_to(map)
 
@@ -165,3 +166,30 @@ def plot_heatmap(
 
     print(f"Heatmap was saved to {output_path}")
     return
+
+def unident_percentage_geo(
+        df_ident: pl.DataFrame,
+        df_unident: pl.DataFrame,
+) -> pl.DataFrame:
+    """Calculate the unidentified percentage for each aggregate cell"""
+
+    df = (
+        df_ident.rename({"count": "Identified"})
+        .join(
+            df_unident.rename({"count": "Unidentified"}),
+            on=["latitude", "longitude"],
+            how = "full",
+            coalesce = True
+        )
+        .with_columns(
+            pl.col("Identified").fill_null(0),
+            pl.col("Unidentified").fill_null(0)
+        )
+        .with_columns((
+            (pl.col("Identified") + pl.col("Unidentified"))
+        ).alias("Total"))
+        .with_columns((
+            pl.col("Unidentified") / pl.col("Total") * 100
+        ).alias("Unidentified_Percentage"))
+    )
+    return df
